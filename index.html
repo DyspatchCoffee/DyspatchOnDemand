@@ -7,27 +7,40 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Dyspatch Go" />
-  <meta name="description" content="Dyspatch Coffee Co. — Order ahead. Trusted fuel. Zero compromises." />
   <title>Dyspatch Go</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body, #root {
-      height: 100%;
-      width: 100%;
-      background: #0E0E0E;
-      overflow: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body,#root{height:100%;width:100%;background:#0E0E0E;overflow:hidden;}
+    body{-webkit-font-smoothing:antialiased;}
+    #loading{position:fixed;inset:0;background:#0E0E0E;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;}
+    .logo{font-family:Arial Black,sans-serif;font-weight:900;font-size:36px;color:#E8722A;letter-spacing:0.05em;margin-bottom:8px;}
+    .sub{font-size:11px;color:#555;letter-spacing:0.2em;font-family:monospace;}
+    .bar{width:120px;height:2px;background:#222;margin-top:20px;overflow:hidden;}
+    .fill{height:100%;background:#E8722A;animation:load 1.5s ease-in-out infinite;}
+    @keyframes load{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
   </style>
 </head>
 <body>
+  <div id="loading">
+    <div class="logo">DYSPATCH</div>
+    <div class="sub">COFFEE CO. · EST. 2026</div>
+    <div class="bar"><div class="fill"></div></div>
+  </div>
   <div id="root"></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-  <script type="text/babel" data-presets="react">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        var loading = document.getElementById('loading');
+        if(loading) loading.style.display = 'none';
+      }, 500);
+    });
+  </script>
+  <script type="text/babel" data-type="module">
 const { useState, useEffect, useRef } = React;
-
+ 
 // ── BRAND TOKENS ─────────────────────────────────────────────────────────────
 // Dyspatch orange + Luxe editorial black/gold hybrid
 const B = {
@@ -52,7 +65,7 @@ const B = {
   blue: "#3B82F6",
   red: "#EF4444",
 };
-
+ 
 const FONTS = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
@@ -68,20 +81,20 @@ const FONTS = `
   @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
   @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 `;
-
-
-
+ 
+ 
+ 
 // ── SUPABASE CONFIG ───────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://yvyfajhmkpvwxfjxtmoq.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2eWZhamhta3B2d3hmanh0bW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjk1MzEsImV4cCI6MjA5MzkwNTUzMX0.UDab64k7rTeEO8uN1zXGd2dUD3OhgJ9Bn8X_WtxukIM";
-
+ 
 const sb = {
   headers: {
     "Content-Type": "application/json",
     "apikey": SUPABASE_ANON_KEY,
     "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
   },
-
+ 
   async getOrders() {
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=*&order=created_at.desc`, { headers: this.headers });
@@ -89,7 +102,7 @@ const sb = {
       return await res.json();
     } catch (e) { return []; }
   },
-
+ 
   async insertOrder(order) {
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
@@ -115,7 +128,7 @@ const sb = {
       return data[0] || null;
     } catch (e) { console.error("insertOrder error:", e); return null; }
   },
-
+ 
   async updateOrderStatus(orderId, status) {
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?order_id=eq.${orderId}`, {
@@ -126,7 +139,7 @@ const sb = {
       return res.ok;
     } catch (e) { console.error("updateOrderStatus error:", e); return false; }
   },
-
+ 
   async loginAdmin(email, password) {
     try {
       const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
@@ -139,7 +152,7 @@ const sb = {
       return data.access_token ? { email, token: data.access_token, ts: Date.now() } : null;
     } catch (e) { console.error("loginAdmin error:", e); return null; }
   },
-
+ 
   subscribeToOrders(callback) {
     // Polls every 8 seconds for new orders (real-time websocket upgrade available later)
     const interval = setInterval(async () => {
@@ -149,9 +162,9 @@ const sb = {
     return () => clearInterval(interval);
   },
 };
-
+ 
 // ── SVG ICON SYSTEM ───────────────────────────────────────────────────────────
-
+ 
 function CartIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#000" }}>
@@ -159,7 +172,7 @@ function CartIcon() {
     </svg>
   );
 }
-
+ 
 function PerfIcon({ color }) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color || "#666"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -167,7 +180,7 @@ function PerfIcon({ color }) {
     </svg>
   );
 }
-
+ 
 function CardIcon({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={B.blue} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -175,7 +188,7 @@ function CardIcon({ size = 20 }) {
     </svg>
   );
 }
-
+ 
 function HandshakeIcon({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={B.orange} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -183,7 +196,7 @@ function HandshakeIcon({ size = 20 }) {
     </svg>
   );
 }
-
+ 
 function CheckIcon({ size = 20, color }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color || B.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -191,7 +204,7 @@ function CheckIcon({ size = 20, color }) {
     </svg>
   );
 }
-
+ 
 function LockIcon({ size = 26 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={B.orange} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -199,7 +212,7 @@ function LockIcon({ size = 26 }) {
     </svg>
   );
 }
-
+ 
 function WarningIcon({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -207,7 +220,7 @@ function WarningIcon({ size = 16 }) {
     </svg>
   );
 }
-
+ 
 function InboxIcon({ size = 44 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={B.dim} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
@@ -215,7 +228,7 @@ function InboxIcon({ size = 44 }) {
     </svg>
   );
 }
-
+ 
 function ListIcon({ size = 44 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={B.dim} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
@@ -223,7 +236,7 @@ function ListIcon({ size = 44 }) {
     </svg>
   );
 }
-
+ 
 function StatusIcon({ type, color }) {
   const props = { fill: "none", stroke: color, strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" };
   if (type === "placed") return (
@@ -243,14 +256,14 @@ function StatusIcon({ type, color }) {
   );
   return null;
 }
-
+ 
 // ── PRODUCT ICON (replaces emoji in item tiles) ───────────────────────────────
-
+ 
 function ProductMark({ code, size = 40 }) {
   const isCB = code === "CB";
   const isNT = code === "NT";
   const isMerch = ["TEE","HAT","HDY","PKG"].includes(code);
-
+ 
   return (
     <div style={{ width: size, height: size, background: B.surface, border: `1px solid ${B.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
       {(isCB || isNT) && (
@@ -265,52 +278,52 @@ function ProductMark({ code, size = 40 }) {
     </div>
   );
 }
-
+ 
 const ADMIN_EMAIL = "admin@dyspatchcoffee.com";
 const ADMIN_PASS = "DyspatchGo2026!";
 const SESSION_KEY = "dyspatch_admin_v1";
-
+ 
 const fmt = (n) => `$${n.toFixed(2)}`;
 const uid = () => `DY-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-
+ 
 const SWEETNESS = ["None", "Light", "Normal", "Extra"];
 const CREAM_OPTS = ["None", "Light", "Normal", "Extra"];
 const SYRUPS = ["None", "Vanilla", "Mocha", "Caramel"];
 const SYRUP_LEVELS = ["Light", "Normal", "Extra"];
-
+ 
 // Cold Brew sizes with pricing
 const PERF_UPCHARGE = 2.00;
 const SHOP_DOMAIN = "dyspatch-coffee-co.myshopify.com";
 const NITRO_SHOPIFY_ID = "9452330451188";
 const TEE_SHOPIFY_ID = "9443673735412";
 const PERF_SHOPIFY_ID = "9452534006004";
-
+ 
 const CB_SIZES = [
   { label: "12 oz",   oz: 12,   price: 4.50,  shopifyId: "9446681673972", allowPerf: true  },
   { label: "16 oz",   oz: 16,   price: 6.00,  shopifyId: "9452323537140", allowPerf: true  },
   { label: "1 Liter", oz: 33.8, price: 18.00, shopifyId: "9452326289652", allowPerf: false },
 ];
-
+ 
 // Nitro is 12oz only
 const NITRO_PRICE = 6.00;
-
+ 
 const SKUS = [
   { id: "cold_brew", name: "Cold Brew", tagline: "12-HR COLD STEEP", desc: "Ultra-smooth. Low acidity. Customizable to your mission specs.", price: 4.50, emoji: "CB", tag: "SIGNATURE", customizable: true, sizes: CB_SIZES, stats: [["CAF","~150mg"],["ACIDITY","LOW"],["BODY","FULL"]] },
   { id: "nitro", name: "Nitro Cold Brew", tagline: "NITROGEN INFUSED · 12 OZ", desc: "Velvety cascading texture. No ice. No compromises. One size — 12oz.", price: NITRO_PRICE, emoji: "NT", tag: "NITRO", customizable: false, stats: [["SIZE","12 OZ"],["CAF","~180mg"],["BODY","HEAVY"]] },
 ];
-
+ 
 const MERCH = [
   { id: "tee", emoji: "TEE", name: "Dyspatch Tee", desc: "Heavyweight cotton · Tactical black", price: 32.00 },
   { id: "hat", emoji: "HAT", name: "Dyspatch Hat", desc: "Structured snapback · Logo patch", price: 28.00 },
   { id: "hoodie", emoji: "HDY", name: "Dyspatch Hoodie", desc: "Fleece-lined · Built to last", price: 55.00 },
   { id: "sticker", emoji: "PKG", name: "Sticker Pack", desc: "Patches + stickers · Mission-grade", price: 8.00 },
 ];
-
+ 
 // ── SHARED UI ─────────────────────────────────────────────────────────────────
-
+ 
 const clip = "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))";
 const clipSm = "polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px))";
-
+ 
 // Editorial divider — thin gold line with label
 function EyebrowLabel({ children, color }) {
   const c = color || B.gold;
@@ -322,7 +335,7 @@ function EyebrowLabel({ children, color }) {
     </div>
   );
 }
-
+ 
 function Btn({ children, onClick, variant = "primary", disabled, full = true, sx = {} }) {
   const base = { border: "none", cursor: disabled ? "not-allowed" : "pointer", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", fontSize: 13, padding: "14px 22px", width: full ? "100%" : "auto", transition: "all 0.15s", opacity: disabled ? 0.3 : 1 };
   const v = {
@@ -335,7 +348,7 @@ function Btn({ children, onClick, variant = "primary", disabled, full = true, sx
   };
   return <button onClick={disabled ? undefined : onClick} style={{ ...base, ...v[variant], ...sx }}>{children}</button>;
 }
-
+ 
 function StatPill({ label, value }) {
   return (
     <div style={{ background: B.surface, border: `1px solid ${B.border}`, padding: "8px 10px", textAlign: "center", flex: 1 }}>
@@ -344,7 +357,7 @@ function StatPill({ label, value }) {
     </div>
   );
 }
-
+ 
 function Chip({ label, active, onClick }) {
   return (
     <button onClick={onClick} style={{ border: `1px solid ${active ? B.orange : B.border}`, background: active ? B.orangeDim : "transparent", color: active ? B.orange : B.muted, fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 600, fontSize: 12, letterSpacing: "0.1em", padding: "6px 14px", cursor: "pointer", transition: "all 0.15s", textTransform: "uppercase" }}>
@@ -352,7 +365,7 @@ function Chip({ label, active, onClick }) {
     </button>
   );
 }
-
+ 
 function ChipRow({ label, options, value, onChange }) {
   return (
     <div style={{ marginBottom: 18 }}>
@@ -363,7 +376,7 @@ function ChipRow({ label, options, value, onChange }) {
     </div>
   );
 }
-
+ 
 function InputField({ label, value, onChange, placeholder, type = "text", required, isPassword, optional }) {
   const [show, setShow] = useState(false);
   return (
@@ -389,9 +402,9 @@ function InputField({ label, value, onChange, placeholder, type = "text", requir
     </div>
   );
 }
-
+ 
 // ── PERFORMANCE TOGGLE ────────────────────────────────────────────────────────
-
+ 
 function PerformanceToggle({ value, onChange }) {
   const [showInfo, setShowInfo] = useState(false);
   return (
@@ -417,7 +430,7 @@ function PerformanceToggle({ value, onChange }) {
           </div>
         </div>
       </div>
-
+ 
       {showInfo && (
         <div onClick={() => setShowInfo(false)} style={{ position: "fixed", inset: 0, background: "#000000DD", zIndex: 200, display: "flex", alignItems: "flex-end", animation: "fadeIn 0.2s" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: B.surface, borderTop: `1px solid ${B.border}`, padding: "28px 22px 40px", width: "100%", maxWidth: 430, margin: "0 auto", animation: "slideUp 0.3s cubic-bezier(0.16,1,0.3,1)" }}>
@@ -449,9 +462,9 @@ function PerformanceToggle({ value, onChange }) {
     </>
   );
 }
-
+ 
 // ── QTY STEPPER ───────────────────────────────────────────────────────────────
-
+ 
 function QtyStepper({ qty, setQty, price }) {
   return (
     <div style={{ marginBottom: 24 }}>
@@ -467,9 +480,9 @@ function QtyStepper({ qty, setQty, price }) {
     </div>
   );
 }
-
+ 
 // ── CUSTOMIZE SHEET ───────────────────────────────────────────────────────────
-
+ 
 function CustomizeSheet({ sku, onAdd, onBack }) {
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState(sku.sizes[0]); // default 12oz
@@ -478,10 +491,10 @@ function CustomizeSheet({ sku, onAdd, onBack }) {
   const [syrup, setSyrup] = useState("None");
   const [syrupLevel, setSyrupLevel] = useState("Normal");
   const [perf, setPerf] = useState(false);
-
+ 
   const unitPrice = size.price + (perf && size.allowPerf ? PERF_UPCHARGE : 0);
   const lineTotal = unitPrice * qty;
-
+ 
   const buildLabel = () => {
     const p = [];
     if (sweetness !== "None") p.push(`${sweetness} Sweet`);
@@ -490,7 +503,7 @@ function CustomizeSheet({ sku, onAdd, onBack }) {
     if (perf) p.push("Performance Stack");
     return p.length ? p.join(" · ") : "BLACK";
   };
-
+ 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: B.bg, overflow: "hidden", animation: "popIn 0.3s ease both" }}>
       {/* Editorial header */}
@@ -504,9 +517,9 @@ function CustomizeSheet({ sku, onAdd, onBack }) {
           </div>
         </div>
       </div>
-
+ 
       <div style={{ flex: 1, overflowY: "auto", padding: "22px 20px 140px" }}>
-
+ 
         {/* SIZE SELECTOR — premium card style */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 9, color: B.muted, letterSpacing: "0.2em", fontFamily: "'Barlow Condensed',sans-serif", textTransform: "uppercase", marginBottom: 10 }}>Select Size</div>
@@ -522,9 +535,9 @@ function CustomizeSheet({ sku, onAdd, onBack }) {
             })}
           </div>
         </div>
-
+ 
         <div style={{ height: 1, background: `linear-gradient(to right, ${B.border}, transparent)`, marginBottom: 22 }} />
-
+ 
         <QtyStepper qty={qty} setQty={setQty} price={unitPrice} />
         <div style={{ height: 1, background: `linear-gradient(to right, ${B.border}, transparent)`, marginBottom: 22 }} />
         <ChipRow label="Sweetness" options={SWEETNESS} value={sweetness} onChange={setSweetness} />
@@ -539,7 +552,7 @@ function CustomizeSheet({ sku, onAdd, onBack }) {
             <div style={{ fontSize: 10, color: B.muted, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.16em" }}>PERFORMANCE MODE — NOT AVAILABLE FOR 1 LITER</div>
           </div>
         )}
-
+ 
         {/* Build summary */}
         <div style={{ border: `1px solid ${B.border}`, background: B.card, padding: "16px 18px" }}>
           <EyebrowLabel color={B.gold}>Your Build</EyebrowLabel>
@@ -549,7 +562,7 @@ function CustomizeSheet({ sku, onAdd, onBack }) {
           <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 13, color: B.orange, letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1.5 }}>{buildLabel()}</div>
         </div>
       </div>
-
+ 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 20px 30px", background: `linear-gradient(to top, ${B.bg} 65%, transparent)` }}>
         <Btn onClick={() => onAdd(buildLabel(), qty, size, unitPrice)}>
           ADD {qty > 1 ? `${qty}× ` : ""}TO ORDER · {fmt(lineTotal)}
@@ -558,9 +571,9 @@ function CustomizeSheet({ sku, onAdd, onBack }) {
     </div>
   );
 }
-
+ 
 // ── NITRO SHEET ───────────────────────────────────────────────────────────────
-
+ 
 function NitroSheet({ sku, onAdd, onBack }) {
   const [qty, setQty] = useState(1);
   const [perf, setPerf] = useState(false);
@@ -593,36 +606,36 @@ function NitroSheet({ sku, onAdd, onBack }) {
     </div>
   );
 }
-
+ 
 // ── SPLASH ────────────────────────────────────────────────────────────────────
-
+ 
 function SplashScreen({ onContinue }) {
   const [vis, setVis] = useState(false);
   useEffect(() => { setTimeout(() => setVis(true), 80); }, []);
-
+ 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: B.bg, overflow: "hidden", position: "relative" }}>
       {/* Full-bleed editorial hero — Luxe-inspired */}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg, #0E0A06 0%, #080808 50%, #050505 100%)" }} />
-
+ 
       {/* Grid overlay texture */}
       <div style={{ position: "absolute", inset: 0, opacity: 0.03, backgroundImage: "repeating-linear-gradient(0deg, #fff 0, #fff 1px, transparent 1px, transparent 60px), repeating-linear-gradient(90deg, #fff 0, #fff 1px, transparent 1px, transparent 60px)" }} />
-
+ 
       {/* Orange accent glow bottom left */}
       <div style={{ position: "absolute", bottom: 100, left: -60, width: 200, height: 200, borderRadius: "50%", background: `radial-gradient(circle, ${B.orange}18 0%, transparent 70%)`, pointerEvents: "none" }} />
-
+ 
       {/* Ticker tape */}
       <div style={{ position: "absolute", bottom: 120, left: 0, right: 0, borderTop: `1px solid ${B.orange}33`, borderBottom: `1px solid ${B.orange}33`, background: `${B.orange}08`, overflow: "hidden", padding: "8px 0", transform: "rotate(-1.5deg) scaleX(1.06)", zIndex: 2 }}>
         <div style={{ display: "flex", whiteSpace: "nowrap", animation: "ticker 16s linear infinite", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "0.22em", color: B.orange }}>
           {Array(8).fill("TRUSTED FUEL  ·  ZERO COMPROMISES  ·  COLD. CLEAN. READY.  ·  BUILT FOR THOSE WHO DON'T STOP  ·  ").join("")}
         </div>
       </div>
-
+ 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 28px 160px", position: "relative", zIndex: 3, opacity: vis ? 1 : 0, transform: vis ? "none" : "translateY(20px)", transition: "all 0.9s cubic-bezier(0.16,1,0.3,1)" }}>
-
+ 
         {/* Eyebrow */}
         <EyebrowLabel color={B.orange}>Dyspatch Coffee Co. · Est. 2026</EyebrowLabel>
-
+ 
         {/* Hero headline — Dyspatch bold + Luxe outline hybrid */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: 72, lineHeight: 0.88, letterSpacing: "0.01em", textTransform: "uppercase" }}>
@@ -634,12 +647,12 @@ function SplashScreen({ onContinue }) {
             <div style={{ color: B.white }}>STOP.</div>
           </div>
         </div>
-
+ 
         <p style={{ fontFamily: "'Barlow',sans-serif", fontWeight: 300, fontSize: 12, color: B.muted, letterSpacing: "0.16em", lineHeight: 1.8, marginBottom: 32, textTransform: "uppercase" }}>
           Trusted Fuel. Zero Compromises.<br />
           For the People Who Keep the World Running.
         </p>
-
+ 
         {/* Stat bar — Luxe-style */}
         <div style={{ display: "flex", gap: 0, marginBottom: 32, borderTop: `1px solid ${B.border}`, borderBottom: `1px solid ${B.border}` }}>
           {[["100%", "WHOLE BEAN"], ["0", "COMPROMISES"], ["2026", "EST."]].map(([val, label], i) => (
@@ -649,7 +662,7 @@ function SplashScreen({ onContinue }) {
             </div>
           ))}
         </div>
-
+ 
         <div style={{ opacity: vis ? 1 : 0, transition: "opacity 0.5s 0.5s" }}>
           <Btn onClick={onContinue}>ORDER YOUR FUEL →</Btn>
         </div>
@@ -657,18 +670,18 @@ function SplashScreen({ onContinue }) {
     </div>
   );
 }
-
+ 
 // ── MENU ──────────────────────────────────────────────────────────────────────
-
+ 
 function MenuScreen({ cart, onAddItem, onViewCart }) {
   const [activeSku, setActiveSku] = useState(null);
   const [flash, setFlash] = useState({});
-
+ 
   const cartCount = Object.values(cart).reduce((s, v) => s + v.qty, 0);
   const cartTotal = Object.values(cart).reduce((s, v) => s + v.price * v.qty, 0);
-
+ 
   const doFlash = id => { setFlash(p => ({ ...p, [id]: true })); setTimeout(() => setFlash(p => ({ ...p, [id]: false })), 800); };
-
+ 
   const handleCustomAdd = (customization, qty, size, unitPrice) => {
     const price = unitPrice || activeSku.price;
     const sizeName = size ? ` (${size.label})` : "";
@@ -685,10 +698,10 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
     doFlash(activeSku.id);
     setActiveSku(null);
   };
-
+ 
   if (activeSku?.id === "cold_brew") return <CustomizeSheet sku={activeSku} onAdd={handleCustomAdd} onBack={() => setActiveSku(null)} />;
   if (activeSku?.id === "nitro") return <NitroSheet sku={activeSku} onAdd={handleCustomAdd} onBack={() => setActiveSku(null)} />;
-
+ 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: B.bg, overflow: "hidden" }}>
       {/* Editorial nav header */}
@@ -698,7 +711,7 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
           <div style={{ fontSize: 9, color: B.muted, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.2em" }}>COLD · CLEAN · READY</div>
           <div style={{ fontSize: 9, color: B.muted, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.2em" }}>EST. 2026</div>
         </div>
-
+ 
         {/* Brand row */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", paddingBottom: 14 }}>
           <div>
@@ -716,23 +729,23 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
           )}
         </div>
       </div>
-
+ 
       {/* Orange marquee bar */}
       <div style={{ background: B.orange, overflow: "hidden", padding: "6px 0" }}>
         <div style={{ display: "flex", whiteSpace: "nowrap", animation: "ticker 20s linear infinite", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 10, letterSpacing: "0.22em", color: "#000" }}>
           {Array(8).fill("COLD  ·  CLEAN  ·  READY  ·  NO COMPROMISES  ·  ORDER AHEAD  ·  PAY NOW OR ON ARRIVAL  ·  ").join("")}
         </div>
       </div>
-
+ 
       <div style={{ flex: 1, overflowY: "auto", padding: "24px 20px 120px" }}>
-
+ 
         {/* Section header — Luxe editorial style */}
         <EyebrowLabel>What We Carry</EyebrowLabel>
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, color: B.white, fontWeight: 600, lineHeight: 1.1, marginBottom: 4 }}>The Lineup</div>
           <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: B.muted, letterSpacing: "0.16em", textTransform: "uppercase" }}>Cold Brew · Nitro · Performance</div>
         </div>
-
+ 
         {SKUS.map((sku, i) => (
           <div key={sku.id} style={{ marginBottom: 16, border: `1px solid ${B.border}`, background: B.card, overflow: "hidden", animation: `fadeUp 0.5s ${i * 0.12}s both` }}>
             {/* Editorial product banner */}
@@ -740,7 +753,7 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
               <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: 10, letterSpacing: "0.24em", color: "#000" }}>{sku.tag}</div>
               <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 500, fontSize: 9, color: "#00000066", letterSpacing: "0.18em" }}>{sku.tagline}</div>
             </div>
-
+ 
             <div style={{ padding: "18px 16px 20px" }}>
               {/* Product name + price row */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
@@ -762,20 +775,20 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
                 </div>
                 </div>
               </div>
-
+ 
               <div style={{ height: 1, background: `linear-gradient(to right, ${B.border}, transparent)`, marginBottom: 12 }} />
-
+ 
               <p style={{ fontSize: 12, color: B.text, lineHeight: 1.6, fontFamily: "'Barlow',sans-serif", fontWeight: 300, marginBottom: 14 }}>{sku.desc}</p>
-
+ 
               {/* Stat grid — Luxe-inspired */}
               <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
                 {sku.stats.map(([k, v]) => <StatPill key={k} label={k} value={v} />)}
               </div>
-
+ 
               <Btn onClick={() => setActiveSku(sku)} variant={flash[sku.id] ? "green" : "primary"}>
                 {flash[sku.id] ? "ADDED TO ORDER ✓" : sku.customizable ? "CUSTOMIZE + ADD →" : "ADD TO ORDER →"}
               </Btn>
-
+ 
               {sku.customizable && (
                 <div style={{ textAlign: "center", marginTop: 8, fontSize: 9, color: B.muted, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.14em" }}>
                   SWEETNESS  ·  CREAM  ·  SYRUPS  ·  PERFORMANCE
@@ -784,7 +797,7 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
             </div>
           </div>
         ))}
-
+ 
         {/* Merch section */}
         <div style={{ marginTop: 32 }}>
           <EyebrowLabel>Gear</EyebrowLabel>
@@ -792,7 +805,7 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
             <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 24, color: B.white, fontWeight: 600, lineHeight: 1.1, marginBottom: 4 }}>Merch & Gear</div>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: B.muted, letterSpacing: "0.16em", textTransform: "uppercase" }}>Apparel · Headwear · Stickers</div>
           </div>
-
+ 
           {MERCH.map((item, i) => (
             <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 14, background: B.card, border: `1px solid ${B.border}`, padding: "14px 16px", marginBottom: 8, animation: `fadeUp 0.4s ${0.2 + i * 0.07}s both` }}>
               <ProductMark code={item.emoji} size={44} />
@@ -811,7 +824,7 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
           ))}
         </div>
       </div>
-
+ 
       {cartCount > 0 && (
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 20px 26px", background: `linear-gradient(to top, ${B.bg} 65%, transparent)` }}>
           <Btn onClick={onViewCart}>VIEW ORDER · {cartCount} {cartCount === 1 ? "ITEM" : "ITEMS"} · {fmt(cartTotal)}</Btn>
@@ -820,9 +833,9 @@ function MenuScreen({ cart, onAddItem, onViewCart }) {
     </div>
   );
 }
-
+ 
 // ── CART ──────────────────────────────────────────────────────────────────────
-
+ 
 function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -830,13 +843,13 @@ function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
   const [email, setEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [pay, setPay] = useState(null);
-
+ 
   const items = Object.values(cart);
   const sub = items.reduce((s, i) => s + i.price * i.qty, 0);
   const tax = sub * 0.07;
   const total = sub + tax;
   const ready = firstName.trim() && lastName.trim() && phone.trim() && pay;
-
+ 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: B.bg, overflow: "hidden" }}>
       <div style={{ padding: "52px 20px 0", background: B.surface, borderBottom: `1px solid ${B.border}` }}>
@@ -849,7 +862,7 @@ function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
           </div>
         </div>
       </div>
-
+ 
       <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px 160px" }}>
         {/* Order items */}
         {items.map(item => (
@@ -866,25 +879,25 @@ function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
             </div>
           </div>
         ))}
-
+ 
         {/* Contact info */}
         <div style={{ marginTop: 26, marginBottom: 8 }}>
           <EyebrowLabel color={B.gold}>Your Details</EyebrowLabel>
         </div>
-
+ 
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1 }}><InputField label="First Name" value={firstName} onChange={setFirstName} placeholder="Juan" required /></div>
           <div style={{ flex: 1 }}><InputField label="Last Name" value={lastName} onChange={setLastName} placeholder="Garcia" required /></div>
         </div>
         <InputField label="Phone" value={phone} onChange={setPhone} placeholder="(305) 000-0000" type="tel" required />
         <InputField label="Email" value={email} onChange={setEmail} placeholder="juan@email.com" type="email" optional />
-
+ 
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 9, color: B.muted, letterSpacing: "0.2em", fontFamily: "'Barlow Condensed',sans-serif", textTransform: "uppercase", marginBottom: 10 }}>Special Notes</div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Extra ice, special instructions..." rows={2}
             style={{ width: "100%", background: B.card, border: `1px solid ${B.border}`, padding: "13px 16px", color: B.white, fontSize: 13, outline: "none", resize: "none", fontFamily: "'Barlow',sans-serif" }} />
         </div>
-
+ 
         {/* Payment */}
         <div style={{ marginBottom: 20 }}>
           <EyebrowLabel color={B.gold}>Payment Method</EyebrowLabel>
@@ -898,10 +911,10 @@ function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
             ))}
           </div>
         </div>
-
+ 
         {pay === "now" && <div style={{ background: `${B.blue}0C`, border: `1px solid ${B.blue}28`, padding: "12px 14px", marginBottom: 16 }}><div style={{ fontSize: 11, color: "#93C5FD", lineHeight: 1.6, fontFamily: "'Barlow',sans-serif", fontWeight: 300 }}><strong>Shopify Checkout</strong> — Secure payment via Apple Pay, Google Pay, or card.</div></div>}
         {pay === "arrival" && <div style={{ background: `${B.orange}0C`, border: `1px solid ${B.orange}28`, padding: "12px 14px", marginBottom: 16 }}><div style={{ fontSize: 11, color: "#FDBA74", lineHeight: 1.6, fontFamily: "'Barlow',sans-serif", fontWeight: 300 }}><strong>Pay on Arrival</strong> — Tap-to-pay with Shopify POS when you roll up.</div></div>}
-
+ 
         {/* Totals */}
         <div style={{ background: B.card, border: `1px solid ${B.border}`, padding: "18px" }}>
           {[["SUBTOTAL", sub], ["TAX (7%)", tax]].map(([l, v]) => (
@@ -917,7 +930,7 @@ function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
           </div>
         </div>
       </div>
-
+ 
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 20px 30px", background: `linear-gradient(to top, ${B.bg} 70%, transparent)` }}>
         {!ready && <div style={{ textAlign: "center", fontSize: 9, color: B.muted, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.16em", marginBottom: 10 }}>NAME · PHONE · PAYMENT REQUIRED TO CONTINUE</div>}
         <Btn onClick={() => {
@@ -938,9 +951,9 @@ function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
     </div>
   );
 }
-
+ 
 // ── CONFIRM ───────────────────────────────────────────────────────────────────
-
+ 
 function ConfirmScreen({ order, onDone }) {
   const [status, setStatus] = useState("placed");
   const id = useRef(uid());
@@ -949,18 +962,18 @@ function ConfirmScreen({ order, onDone }) {
     const b = setTimeout(() => setStatus("ready"), 15000);
     return () => { clearTimeout(a); clearTimeout(b); };
   }, []);
-
+ 
   const S = {
     placed: { label: "ORDER RECEIVED", sub: "TRANSMISSION CONFIRMED. STAND BY.", icon: "placed", color: B.orange, pct: 18 },
     making: { label: "FUEL IN PROGRESS", sub: "YOUR ORDER IS BEING PREPARED.", icon: "making", color: B.orange, pct: 58 },
     ready: { label: "READY FOR PICKUP", sub: "YOUR FUEL IS READY. MOVE OUT.", icon: "ready", color: B.green, pct: 100 },
   };
   const s = S[status];
-
+ 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: B.bg, padding: "52px 20px 32px", overflowY: "auto" }}>
       <EyebrowLabel color={B.orange}>Order Status</EyebrowLabel>
-
+ 
       <div style={{ background: `${s.color}0A`, border: `1px solid ${s.color}33`, padding: "26px 20px", textAlign: "center", marginBottom: 20, transition: "all 0.5s" }}>
         <div style={{ marginBottom: 16 }}><StatusIcon type={s.icon} color={s.color} /></div>
         <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: 22, color: s.color, letterSpacing: "0.1em" }}>{s.label}</div>
@@ -969,7 +982,7 @@ function ConfirmScreen({ order, onDone }) {
           <div style={{ width: `${s.pct}%`, height: "100%", background: `linear-gradient(to right, ${s.color}, ${s.color}88)`, transition: "width 1.2s ease" }} />
         </div>
       </div>
-
+ 
       <div style={{ background: B.card, border: `1px solid ${B.border}`, padding: 18, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
@@ -998,7 +1011,7 @@ function ConfirmScreen({ order, onDone }) {
           <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: 22, color: B.orange }}>{fmt(order.total)}</span>
         </div>
       </div>
-
+ 
       <div style={{ background: order.payOption === "now" ? `${B.blue}0C` : `${B.orange}0C`, border: `1px solid ${order.payOption === "now" ? B.blue + "28" : B.orange + "28"}`, padding: "12px 16px", marginBottom: 24, display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ flexShrink: 0 }}>{order.payOption === "now" ? <CheckIcon size={20} color={B.green} /> : <HandshakeIcon size={20} />}</div>
         <div>
@@ -1006,19 +1019,19 @@ function ConfirmScreen({ order, onDone }) {
           <div style={{ fontSize: 11, color: B.muted, fontFamily: "'Barlow',sans-serif", fontWeight: 300 }}>{order.payOption === "now" ? "Shopify payment processed." : "Tap-to-pay when you roll up."}</div>
         </div>
       </div>
-
+ 
       <Btn onClick={onDone} variant="ghost">← ORDER AGAIN</Btn>
     </div>
   );
 }
-
-
+ 
+ 
 // ── SHOPIFY CHECKOUT ──────────────────────────────────────────────────────────
-
+ 
 function buildShopifyCheckoutUrl(items, customerInfo) {
   const lineItems = [];
   let perfCount = 0; // track how many performance stacks to add
-
+ 
   items.forEach(item => {
     // Map item name to Shopify variant ID
     let variantId = null;
@@ -1027,22 +1040,22 @@ function buildShopifyCheckoutUrl(items, customerInfo) {
     else if (item.name.includes("16 oz")) variantId = CB_SIZES[1].shopifyId;
     else if (item.name.includes("12 oz") && !item.name.includes("Nitro")) variantId = CB_SIZES[0].shopifyId;
     else if (item.name.includes("Tee")) variantId = TEE_SHOPIFY_ID;
-
+ 
     if (variantId) lineItems.push(`${variantId}:${item.qty}`);
-
+ 
     // Count performance stacks needed
     if (item.customization && item.customization.includes("Performance Stack")) {
       perfCount += item.qty;
     }
   });
-
+ 
   // Add Performance Stack line items to cart
   if (perfCount > 0) {
     lineItems.push(`${PERF_SHOPIFY_ID}:${perfCount}`);
   }
-
+ 
   if (lineItems.length === 0) return null;
-
+ 
   // Build note with all customizations
   const noteLines = items.map(item => {
     let line = item.name;
@@ -1053,21 +1066,21 @@ function buildShopifyCheckoutUrl(items, customerInfo) {
   noteLines.push(`Phone: ${customerInfo.phone}`);
   if (customerInfo.email) noteLines.push(`Email: ${customerInfo.email}`);
   if (customerInfo.notes) noteLines.push(`Notes: ${customerInfo.notes}`);
-
+ 
   const cartPath = lineItems.join(",");
   const note = encodeURIComponent(noteLines.join(" | "));
   return `https://${SHOP_DOMAIN}/cart/${cartPath}?note=${note}&checkout[email]=${encodeURIComponent(customerInfo.email || "")}`;
 }
-
+ 
 // ── ADMIN LOGIN ───────────────────────────────────────────────────────────────
-
+ 
 function AdminLogin({ onSuccess }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
-
+ 
   const handleLogin = async () => {
     if (!email || !pass) { setError("Enter your credentials."); return; }
     setLoading(true); setError("");
@@ -1089,7 +1102,7 @@ function AdminLogin({ onSuccess }) {
       setTimeout(() => setShake(false), 600);
     }
   };
-
+ 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: B.bg, overflow: "hidden" }}>
       {/* Header bar — editorial orange */}
@@ -1098,26 +1111,26 @@ function AdminLogin({ onSuccess }) {
         <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: 28, color: "#000", letterSpacing: "0.06em" }}>COMMAND CENTER</div>
         <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: "#00000066", letterSpacing: "0.16em", marginTop: 2 }}>AUTHORIZED ACCESS ONLY</div>
       </div>
-
+ 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "32px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{ width: 60, height: 60, background: B.card, border: `1px solid ${B.border}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}><LockIcon size={26} /></div>
           <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, color: B.white, marginBottom: 4 }}>Secure Login</div>
           <div style={{ fontSize: 10, color: B.muted, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.18em" }}>AUTHORIZED PERSONNEL ONLY</div>
         </div>
-
+ 
         <div style={{ animation: shake ? "shake 0.4s ease" : "none" }}>
           <InputField label="Admin Email" value={email} onChange={setEmail} placeholder="admin@dyspatchcoffee.com" type="email" required />
           <InputField label="Password" value={pass} onChange={setPass} placeholder="••••••••••" isPassword required />
         </div>
-
+ 
         {error && (
           <div style={{ background: "#EF444412", border: "1px solid #EF444430", padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
             <WarningIcon size={16} />
             <span style={{ fontSize: 12, color: "#FCA5A5", fontFamily: "'Barlow',sans-serif" }}>{error}</span>
           </div>
         )}
-
+ 
         <Btn onClick={handleLogin} disabled={loading}>
           {loading ? (
             <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
@@ -1126,7 +1139,7 @@ function AdminLogin({ onSuccess }) {
             </span>
           ) : "ACCESS COMMAND CENTER →"}
         </Btn>
-
+ 
         <div style={{ marginTop: 24, textAlign: "center", fontSize: 9, color: B.dim, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.14em", lineHeight: 1.8 }}>
           PRODUCTION: CONNECT SUPABASE AUTH<br />FOR ENCRYPTED CREDENTIAL STORAGE
         </div>
@@ -1134,13 +1147,13 @@ function AdminLogin({ onSuccess }) {
     </div>
   );
 }
-
+ 
 // ── ADMIN DASHBOARD ───────────────────────────────────────────────────────────
-
+ 
 function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout }) {
   const [dbOrders, setDbOrders] = useState(null); // null = loading
   const [loadError, setLoadError] = useState(false);
-
+ 
   useEffect(() => {
     // Initial load
     sb.getOrders().then(data => {
@@ -1188,10 +1201,10 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
     });
     return unsub;
   }, []);
-
+ 
   // Use DB orders if loaded, otherwise fall back to local
   const orders = dbOrders !== null ? dbOrders : localOrders;
-
+ 
   const handleUpdateStatus = async (id, status) => {
     onUpdateStatus(id, status); // optimistic local
     await sb.updateOrderStatus(id, status); // persist to DB
@@ -1207,17 +1220,17 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
       })));
     }
   };
-
+ 
   // Override onUpdateStatus with the DB-aware version
   onUpdateStatus = handleUpdateStatus;
-
+ 
   const [tab, setTab] = useState("active");
   const sc = { placed: B.orange, making: "#F59E0B", ready: B.green, done: B.dim };
   const sl = { placed: "RECEIVED", making: "MAKING", ready: "READY", done: "DONE" };
   const active = orders.filter(o => o.status !== "done");
   const done = orders.filter(o => o.status === "done");
   const revenue = done.reduce((s, o) => s + o.total, 0);
-
+ 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", background: B.bg, overflow: "hidden" }}>
       {/* Editorial admin header */}
@@ -1230,7 +1243,7 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
           </div>
           <button onClick={onLogout} style={{ background: "#EF444412", border: "1px solid #EF444430", padding: "7px 14px", cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 11, color: "#FCA5A5", letterSpacing: "0.1em" }}>LOGOUT</button>
         </div>
-
+ 
         {/* Stat row — Luxe grid style */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
           {[["ACTIVE", active.length, B.orange], ["COMPLETED", done.length, B.green], ["REVENUE", fmt(revenue), B.gold]].map(([label, val, color]) => (
@@ -1240,7 +1253,7 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
             </div>
           ))}
         </div>
-
+ 
         {/* Tabs */}
         <div style={{ display: "flex" }}>
           {[["active", "ACTIVE"], ["done", "COMPLETED"]].map(([k, label]) => (
@@ -1250,7 +1263,7 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
           ))}
         </div>
       </div>
-
+ 
       {dbOrders === null && (
         <div style={{ padding: "32px 20px", textAlign: "center" }}>
           <div style={{ display: "inline-block", width: 20, height: 20, border: `2px solid ${B.border}`, borderTopColor: B.orange, borderRadius: "50%", animation: "spin 0.8s linear infinite", marginBottom: 12 }} />
@@ -1305,7 +1318,7 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
             ))}
           </>
         )}
-
+ 
         {tab === "done" && (
           <>
             {done.length === 0 && (
@@ -1337,9 +1350,9 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
     </div>
   );
 }
-
+ 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-
+ 
 export default function App() {
   const [screen, setScreen] = useState("splash");
   const [cart, setCart] = useState({});
@@ -1347,7 +1360,7 @@ export default function App() {
   const [orders, setOrders] = useState([]);
   const [adminSession, setAdminSession] = useState(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-
+ 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(SESSION_KEY);
@@ -1358,12 +1371,12 @@ export default function App() {
       }
     } catch (e) {}
   }, []);
-
+ 
   const addItem = item => setCart(p => ({
     ...p,
     [item.id]: p[item.id] ? { ...p[item.id], qty: p[item.id].qty + 1 } : { ...item, qty: 1 },
   }));
-
+ 
   const placeOrder = async (data) => {
     const o = { ...data, id: uid(), status: "placed", ts: Date.now() };
     // Optimistic UI — show confirm immediately
@@ -1374,20 +1387,20 @@ export default function App() {
     // Write to Supabase in background
     await sb.insertOrder(o);
   };
-
+ 
   const handleLogout = () => {
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
     setAdminSession(null);
     setShowAdminLogin(false);
     setScreen("menu");
   };
-
+ 
   const handleAdminSuccess = session => {
     setAdminSession(session);
     setShowAdminLogin(false);
     setScreen("admin");
   };
-
+ 
   if (showAdminLogin && !adminSession) {
     return (
       <div style={{ width: "100%", maxWidth: 430, margin: "0 auto", height: "100dvh", display: "flex", flexDirection: "column", background: B.bg, overflow: "hidden", fontFamily: "'Barlow',sans-serif" }}>
@@ -1396,13 +1409,13 @@ export default function App() {
       </div>
     );
   }
-
+ 
   return (
     <div style={{ width: "100%", maxWidth: 430, margin: "0 auto", height: "100dvh", display: "flex", flexDirection: "column", background: B.bg, position: "relative", overflow: "hidden", fontFamily: "'Barlow',sans-serif" }}>
       <style>{FONTS}</style>
-
+ 
       {screen === "splash" && <SplashScreen onContinue={() => setScreen("menu")} />}
-
+ 
       {screen === "menu" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
           <MenuScreen cart={cart} onAddItem={addItem} onViewCart={() => setScreen("cart")} />
@@ -1413,7 +1426,7 @@ export default function App() {
           </button>
         </div>
       )}
-
+ 
       {screen === "cart" && <CartScreen cart={cart} setCart={setCart} onBack={() => setScreen("menu")} onPlaceOrder={placeOrder} />}
       {screen === "confirm" && currentOrder && <ConfirmScreen order={currentOrder} onDone={() => { setScreen("menu"); setCurrentOrder(null); }} />}
       {screen === "admin" && adminSession && <AdminDashboard orders={orders} onUpdateStatus={(id, status) => setOrders(p => p.map(o => o.id === id ? { ...o, status } : o))} session={adminSession} onLogout={handleLogout} />}
@@ -1421,9 +1434,10 @@ export default function App() {
     </div>
   );
 }
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(App));
+ 
+const container = document.getElementById('root');
+const root = ReactDOM.createRoot(container);
+root.render(<App />);
   </script>
 </body>
 </html>
