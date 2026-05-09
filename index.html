@@ -35,7 +35,7 @@
       setTimeout(function() {
         var loading = document.getElementById('loading');
         if(loading) loading.style.display = 'none';
-      }, 500);
+      }, 600);
     });
   </script>
   <script type="text/babel" data-type="module">
@@ -298,6 +298,16 @@ const NITRO_SHOPIFY_ID = "9452330451188";
 const TEE_SHOPIFY_ID = "9443673735412";
 const PERF_SHOPIFY_ID = "9452534006004";
  
+// Variant IDs (use these for cart URL — different from product IDs)
+const VARIANTS = {
+  cold_brew_12oz:  "48133066916084",
+  cold_brew_16oz:  "48169181544692",
+  cold_brew_1liter:"48169208348916",
+  nitro_12oz:      "48169249014004",
+  perf_stack:      "8170873159924",
+  tee:             null, // opens product page — size/color selection needed
+};
+ 
 const CB_SIZES = [
   { label: "12 oz",   oz: 12,   price: 4.50,  shopifyId: "9446681673972", allowPerf: true  },
   { label: "16 oz",   oz: 16,   price: 6.00,  shopifyId: "9452323537140", allowPerf: true  },
@@ -309,14 +319,11 @@ const NITRO_PRICE = 6.00;
  
 const SKUS = [
   { id: "cold_brew", name: "Cold Brew", tagline: "12-HR COLD STEEP", desc: "Ultra-smooth. Low acidity. Customizable to your mission specs.", price: 4.50, emoji: "CB", tag: "SIGNATURE", customizable: true, sizes: CB_SIZES, stats: [["CAF","~150mg"],["ACIDITY","LOW"],["BODY","FULL"]] },
-  { id: "nitro", name: "Nitro Cold Brew", tagline: "NITROGEN INFUSED · 12 OZ", desc: "Velvety cascading texture. No ice. No compromises. One size — 12oz.", price: NITRO_PRICE, emoji: "NT", tag: "NITRO", customizable: false, stats: [["SIZE","12 OZ"],["CAF","~180mg"],["BODY","HEAVY"]] },
+  { id: "nitro", name: "Nitro Cold Brew", tagline: "NITROGEN INFUSED · 12 OZ", desc: "Velvety cascading texture. No ice. No compromises. One size — 12oz.", price: NITRO_PRICE, emoji: "NT", tag: "NITRO", customizable: false, stats: [["SIZE","12 OZ"],["CAF","~200mg"],["BODY","HEAVY"]] },
 ];
  
 const MERCH = [
   { id: "tee", emoji: "TEE", name: "Dyspatch Tee", desc: "Heavyweight cotton · Tactical black", price: 32.00 },
-  { id: "hat", emoji: "HAT", name: "Dyspatch Hat", desc: "Structured snapback · Logo patch", price: 28.00 },
-  { id: "hoodie", emoji: "HDY", name: "Dyspatch Hoodie", desc: "Fleece-lined · Built to last", price: 55.00 },
-  { id: "sticker", emoji: "PKG", name: "Sticker Pack", desc: "Patches + stickers · Mission-grade", price: 8.00 },
 ];
  
 // ── SHARED UI ─────────────────────────────────────────────────────────────────
@@ -625,7 +632,7 @@ function SplashScreen({ onContinue }) {
       <div style={{ position: "absolute", bottom: 100, left: -60, width: 200, height: 200, borderRadius: "50%", background: `radial-gradient(circle, ${B.orange}18 0%, transparent 70%)`, pointerEvents: "none" }} />
  
       {/* Ticker tape */}
-      <div style={{ position: "absolute", bottom: 120, left: 0, right: 0, borderTop: `1px solid ${B.orange}33`, borderBottom: `1px solid ${B.orange}33`, background: `${B.orange}08`, overflow: "hidden", padding: "8px 0", transform: "rotate(-1.5deg) scaleX(1.06)", zIndex: 2 }}>
+      <div style={{ position: "absolute", bottom: 180, left: 0, right: 0, borderTop: `1px solid ${B.orange}33`, borderBottom: `1px solid ${B.orange}33`, background: `${B.orange}08`, overflow: "hidden", padding: "8px 0", transform: "rotate(-1.5deg) scaleX(1.06)", zIndex: 2 }}>
         <div style={{ display: "flex", whiteSpace: "nowrap", animation: "ticker 16s linear infinite", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 11, letterSpacing: "0.22em", color: B.orange }}>
           {Array(8).fill("TRUSTED FUEL  ·  ZERO COMPROMISES  ·  COLD. CLEAN. READY.  ·  BUILT FOR THOSE WHO DON'T STOP  ·  ").join("")}
         </div>
@@ -937,7 +944,6 @@ function CartScreen({ cart, setCart, onBack, onPlaceOrder }) {
           if (!ready) return;
           const orderData = { firstName, lastName, phone, email, notes, payOption: pay, total, subtotal: sub, tax, items };
           if (pay === "now") {
-            // Save order to Supabase first, then open Shopify checkout
             onPlaceOrder(orderData);
             const url = buildShopifyCheckoutUrl(items, { firstName, lastName, phone, email, notes });
             if (url) window.open(url, "_blank");
@@ -1030,46 +1036,51 @@ function ConfirmScreen({ order, onDone }) {
  
 function buildShopifyCheckoutUrl(items, customerInfo) {
   const lineItems = [];
-  let perfCount = 0; // track how many performance stacks to add
+  let perfCount = 0;
+  const teeItems = [];
  
   items.forEach(item => {
-    // Map item name to Shopify variant ID
     let variantId = null;
-    if (item.name.includes("Nitro")) variantId = NITRO_SHOPIFY_ID;
-    else if (item.name.includes("1 Liter")) variantId = CB_SIZES[2].shopifyId;
-    else if (item.name.includes("16 oz")) variantId = CB_SIZES[1].shopifyId;
-    else if (item.name.includes("12 oz") && !item.name.includes("Nitro")) variantId = CB_SIZES[0].shopifyId;
-    else if (item.name.includes("Tee")) variantId = TEE_SHOPIFY_ID;
+    if (item.name.includes("Nitro")) variantId = VARIANTS.nitro_12oz;
+    else if (item.name.includes("1 Liter")) variantId = VARIANTS.cold_brew_1liter;
+    else if (item.name.includes("16 oz")) variantId = VARIANTS.cold_brew_16oz;
+    else if (item.name.includes("12 oz") && !item.name.includes("Nitro")) variantId = VARIANTS.cold_brew_12oz;
+    else if (item.name.includes("Tee")) { teeItems.push(item); return; }
  
     if (variantId) lineItems.push(`${variantId}:${item.qty}`);
- 
-    // Count performance stacks needed
     if (item.customization && item.customization.includes("Performance Stack")) {
       perfCount += item.qty;
     }
   });
  
-  // Add Performance Stack line items to cart
+  // Add performance stack as separate line item
   if (perfCount > 0) {
-    lineItems.push(`${PERF_SHOPIFY_ID}:${perfCount}`);
+    lineItems.push(`${VARIANTS.perf_stack}:${perfCount}`);
   }
  
-  if (lineItems.length === 0) return null;
- 
-  // Build note with all customizations
-  const noteLines = items.map(item => {
-    let line = item.name;
-    if (item.customization) line += ` — ${item.customization}`;
-    return line;
-  });
-  noteLines.push(`Customer: ${customerInfo.firstName} ${customerInfo.lastName}`);
-  noteLines.push(`Phone: ${customerInfo.phone}`);
+  // Build order note with full customization details
+  const noteLines = [];
+  noteLines.push(`DYSPATCH GO APP ORDER`);
+  noteLines.push(`Customer: ${customerInfo.firstName} ${customerInfo.lastName} | Phone: ${customerInfo.phone}`);
   if (customerInfo.email) noteLines.push(`Email: ${customerInfo.email}`);
-  if (customerInfo.notes) noteLines.push(`Notes: ${customerInfo.notes}`);
+  noteLines.push(`---`);
+  items.forEach(item => {
+    let line = `${item.qty}x ${item.name}`;
+    if (item.customization) line += ` (${item.customization})`;
+    noteLines.push(line);
+  });
+  if (customerInfo.notes) noteLines.push(`Special: ${customerInfo.notes}`);
+ 
+  const note = encodeURIComponent(noteLines.join(" | "));
+ 
+  // If they have tee items, open product page separately
+  if (teeItems.length > 0 && lineItems.length === 0) {
+    return `https://${SHOP_DOMAIN}/products/dyspatch-tee`;
+  }
  
   const cartPath = lineItems.join(",");
-  const note = encodeURIComponent(noteLines.join(" | "));
-  return `https://${SHOP_DOMAIN}/cart/${cartPath}?note=${note}&checkout[email]=${encodeURIComponent(customerInfo.email || "")}`;
+  if (!cartPath) return null;
+  return `https://${SHOP_DOMAIN}/cart/${cartPath}?note=${note}`;
 }
  
 // ── ADMIN LOGIN ───────────────────────────────────────────────────────────────
