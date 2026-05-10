@@ -323,7 +323,7 @@ const SKUS = [
 ];
  
 const MERCH = [
-  { id: "tee", emoji: "TEE", name: "Dyspatch Tee", desc: "Heavyweight cotton · Tactical black", price: 32.00 },
+  { id: "tee", emoji: "TEE", name: "Dyspatch Skull Tee", desc: "Olive · Maroon · Black · Navy · Size & color at checkout", price: 34.99 },
 ];
  
 // ── SHARED UI ─────────────────────────────────────────────────────────────────
@@ -1094,7 +1094,7 @@ function buildShopifyCheckoutUrl(items, customerInfo) {
  
   // If they have tee items, open product page separately
   if (teeItems.length > 0 && lineItems.length === 0) {
-    return `https://${SHOP_DOMAIN}/products/dyspatch-tee`;
+    return `https://${SHOP_DOMAIN}/products/dyspatch-coffee-co-dispatcher-skull-tee`;
   }
  
   const cartPath = lineItems.join(",");
