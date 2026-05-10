@@ -964,15 +964,34 @@ function ConfirmScreen({ order, onDone }) {
   const [status, setStatus] = useState("placed");
   const id = useRef(uid());
   useEffect(() => {
-    const a = setTimeout(() => setStatus("making"), 4500);
-    const b = setTimeout(() => setStatus("ready"), 15000);
-    return () => { clearTimeout(a); clearTimeout(b); };
-  }, []);
+    if (!order?.id) return;
+    // Poll Supabase every 5 seconds for real status updates
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `https://yvyfajhmkpvwxfjxtmoq.supabase.co/rest/v1/orders?order_id=eq.${order.id}&select=status`,
+          { headers: {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2eWZhamhta3B2d3hmanh0bW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjk1MzEsImV4cCI6MjA5MzkwNTUzMX0.UDab64k7rTeEO8uN1zXGd2dUD3OhgJ9Bn8X_WtxukIM",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2eWZhamhta3B2d3hmanh0bW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjk1MzEsImV4cCI6MjA5MzkwNTUzMX0.UDab64k7rTeEO8uN1zXGd2dUD3OhgJ9Bn8X_WtxukIM",
+          }}
+        );
+        const data = await res.json();
+        if (data?.[0]?.status && data[0].status !== "deleted") {
+          setStatus(data[0].status);
+        }
+      } catch (e) {}
+    };
+    poll(); // immediate first check
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, [order?.id]);
  
   const S = {
-    placed: { label: "ORDER RECEIVED", sub: "TRANSMISSION CONFIRMED. STAND BY.", icon: "placed", color: B.orange, pct: 18 },
-    making: { label: "FUEL IN PROGRESS", sub: "YOUR ORDER IS BEING PREPARED.", icon: "making", color: B.orange, pct: 58 },
-    ready: { label: "READY FOR PICKUP", sub: "YOUR FUEL IS READY. MOVE OUT.", icon: "ready", color: B.green, pct: 100 },
+    placed:    { label: "ORDER BEING PROCESSED", sub: "YOUR ORDER IS IN THE QUEUE. STAND BY.",    icon: "placed",  color: B.orange, pct: 15 },
+    received:  { label: "ORDER RECEIVED",         sub: "WE GOT IT. YOUR FUEL IS BEING PREPARED.", icon: "making",  color: B.orange, pct: 55 },
+    completed: { label: "ORDER COMPLETED",         sub: "YOUR FUEL IS READY. MOVE OUT.",           icon: "ready",   color: B.green,  pct: 100 },
+    making:    { label: "ORDER RECEIVED",         sub: "WE GOT IT. YOUR FUEL IS BEING PREPARED.", icon: "making",  color: B.orange, pct: 55 },
+    ready:     { label: "ORDER COMPLETED",         sub: "YOUR FUEL IS READY. MOVE OUT.",           icon: "ready",   color: B.green,  pct: 100 },
   };
   const s = S[status];
  
@@ -1161,7 +1180,7 @@ function AdminLogin({ onSuccess }) {
  
 // ── ADMIN DASHBOARD ───────────────────────────────────────────────────────────
  
-function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout }) {
+function AdminDashboard({ orders: localOrders, onUpdateStatus, onDeleteOrder, session, onLogout }) {
   const [dbOrders, setDbOrders] = useState(null); // null = loading
   const [loadError, setLoadError] = useState(false);
  
@@ -1236,7 +1255,7 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
   onUpdateStatus = handleUpdateStatus;
  
   const [tab, setTab] = useState("active");
-  const sc = { placed: B.orange, making: "#F59E0B", ready: B.green, done: B.dim };
+  const sc = { placed: B.orange, received: "#F59E0B", completed: B.green, done: B.dim, making: "#F59E0B", ready: B.green, deleted: B.dim };
   const sl = { placed: "RECEIVED", making: "MAKING", ready: "READY", done: "DONE" };
   const active = orders.filter(o => o.status !== "done");
   const done = orders.filter(o => o.status === "done");
@@ -1319,9 +1338,12 @@ function AdminDashboard({ orders: localOrders, onUpdateStatus, session, onLogout
                       <span style={{ fontSize: 9, color: B.muted, marginLeft: 8, fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.1em" }}>{o.payOption === "now" ? "PAID" : "ON ARRIVAL"}</span>
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      {o.status === "placed" && <button onClick={() => onUpdateStatus(o.id, "making")} style={{ background: B.orange, border: "none", padding: "7px 14px", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>START</button>}
-                      {o.status === "making" && <button onClick={() => onUpdateStatus(o.id, "ready")} style={{ background: B.green, border: "none", padding: "7px 14px", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>READY</button>}
-                      {o.status === "ready" && <button onClick={() => onUpdateStatus(o.id, "done")} style={{ background: B.surface, border: `1px solid ${B.border}`, padding: "7px 14px", color: B.muted, fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>DONE ✓</button>}
+                      {o.status === "placed" && <button onClick={() => onUpdateStatus(o.id, "received")} style={{ background: B.orange, border: "none", padding: "7px 14px", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>RECEIVED</button>}
+                      {o.status === "received" && <button onClick={() => onUpdateStatus(o.id, "completed")} style={{ background: B.green, border: "none", padding: "7px 14px", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>COMPLETE</button>}
+                      {o.status === "completed" && <button onClick={() => onUpdateStatus(o.id, "done")} style={{ background: B.surface, border: `1px solid ${B.border}`, padding: "7px 14px", color: B.muted, fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>DONE ✓</button>}
+                      {(o.status === "making") && <button onClick={() => onUpdateStatus(o.id, "completed")} style={{ background: B.green, border: "none", padding: "7px 14px", color: "#000", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>COMPLETE</button>}
+                      {(o.status === "ready") && <button onClick={() => onUpdateStatus(o.id, "done")} style={{ background: B.surface, border: `1px solid ${B.border}`, padding: "7px 14px", color: B.muted, fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.12em" }}>DONE ✓</button>}
+                      <button onClick={() => onDeleteOrder(o.id)} style={{ background: "#EF444415", border: "1px solid #EF444430", padding: "7px 10px", color: "#FCA5A5", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: "0.1em" }}>✕</button>
                     </div>
                   </div>
                 </div>
@@ -1440,7 +1462,16 @@ export default function App() {
  
       {screen === "cart" && <CartScreen cart={cart} setCart={setCart} onBack={() => setScreen("menu")} onPlaceOrder={placeOrder} />}
       {screen === "confirm" && currentOrder && <ConfirmScreen order={currentOrder} onDone={() => { setScreen("menu"); setCurrentOrder(null); }} />}
-      {screen === "admin" && adminSession && <AdminDashboard orders={orders} onUpdateStatus={(id, status) => setOrders(p => p.map(o => o.id === id ? { ...o, status } : o))} session={adminSession} onLogout={handleLogout} />}
+      {screen === "admin" && adminSession && <AdminDashboard 
+        orders={orders} 
+        onUpdateStatus={(id, status) => setOrders(p => p.map(o => o.id === id ? { ...o, status } : o))} 
+        onDeleteOrder={async (id) => {
+          setOrders(p => p.filter(o => o.id !== id));
+          await sb.updateOrderStatus(id, "deleted");
+        }}
+        session={adminSession} 
+        onLogout={handleLogout} 
+      />}
       {screen === "admin" && !adminSession && <AdminLogin onSuccess={handleAdminSuccess} />}
     </div>
   );
